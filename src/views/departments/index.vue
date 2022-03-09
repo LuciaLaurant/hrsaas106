@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-container">
+  <div class="dashboard-container" v-loading="loading">
     <div class="app-container">
       <el-card class="tree-card">
         <!-- 用了一个行列布局 -->
@@ -12,12 +12,13 @@
             :tree-node="data"
             @delDepts="getDepartments"
             @addDepts="addDepts"
+            @editDepts="editDepts"
           />
         </el-tree>
       </el-card>
     </div>
     <!-- 放置新增弹层组件  -->
-    <add-dept :show-dialog="showDialog" :tree-node="node" />
+    <add-dept ref="addDept" :show-dialog.sync="showDialog" :tree-node="node" @addDepts="getDepartments" />
   </div>
 </template>
 
@@ -44,21 +45,32 @@ export default {
         label: 'name' // 表示 从这个属性显示内容
       },
       showDialog: false, // 显示窗体
-      node:null //记录当前节点
+      node:null, //记录当前节点
+      loading: false // 用来控制进度弹层的显示和隐藏
     }
   },
   methods:{
     async getDepartments() {
+      this.loading = true
       const result = await getDepartments()
       this.company = { name: result.companyName, manager: '负责人' ,id: ''}
       this.departs = tranListToTreeData(result.depts, '') // 需要将其转化成树形结构
-      console.log(result)
+      this.loading = false
+      // console.log(result)
     },
     // 监听显示弹层
     addDepts(node){
       this.showDialog = true // 显示弹层
       // 因为node是当前的点击的部门， 此时这个部门应该记录下来,
       this.node = node
+    },
+    // 编辑部门节点
+    editDepts(node) {
+      // 首先打开弹层
+      this.showDialog = true
+      this.node = node // 赋值操作的节点
+      // 父组件 调用子组件的方法
+      this.$refs.addDept.getDepartDetail(node.id) // 直接调用子组件中的方法 传入一个id
     }
   }
 }
